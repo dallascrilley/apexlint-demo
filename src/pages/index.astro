@@ -1,0 +1,257 @@
+---
+// Apexlint — lint the ops-code your agent shipped
+// Static page; all linting runs client-side from deterministic rule engine.
+import '../styles/apexlint.css';
+const title = "Apexlint — Your agent wrote Apex at 2am. Who reviewed it?";
+const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 deterministic rules. No model call — by design.";
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
+  <body>
+    <div class="al-root" id="al-app">
+
+      <!-- Nav -->
+      <nav class="al-nav" aria-label="Apexlint navigation">
+        <span class="al-nav-wordmark" aria-label="Apexlint">
+          <span class="al-wm-apex">APEX</span><span class="al-wm-sep" aria-hidden="true"></span><span class="al-wm-lint">LINT</span>
+        </span>
+        <span class="al-nav-sep" aria-hidden="true"></span>
+        <span class="al-nav-tagline">Lint the ops-code your agent shipped.</span>
+        <span class="al-nav-spacer"></span>
+        <span class="al-nav-badge">portfolio demo · synthetic</span>
+      </nav>
+
+      <!-- Synthetic data banner -->
+      <div class="al-banner" id="al-banner" role="status" aria-live="polite">
+        <span class="al-banner-icon" aria-hidden="true">SYN</span>
+        <p class="al-banner-text">
+          <strong>Synthetic code only — this is a portfolio demo, not a connected org.</strong>
+          All linting runs on pre-loaded sample code, in your browser. No live model, no real org, no invented benchmarks. <em>The determinism is the point.</em>
+        </p>
+        <button class="al-banner-dismiss" id="al-banner-dismiss" aria-label="Dismiss banner">×</button>
+      </div>
+
+      <!-- Hero -->
+      <section class="al-hero" aria-labelledby="al-h1">
+        <h1 class="al-hero-h1" id="al-h1">
+          Your agent wrote Apex at 2am.<br>
+          <em>Who reviewed it?</em>
+        </h1>
+        <p class="al-hero-sub">
+          Apexlint catches the specific, reproducible mistakes AI agents make in Salesforce Apex,
+          Flow JSON, and n8n DSL — deterministically, in milliseconds, with no model call and no data leaving your browser.
+        </p>
+        <div class="al-hero-meta" aria-label="Key properties">
+          <span class="al-hero-meta-item">
+            <span class="al-hero-meta-dot" aria-hidden="true"></span>
+            16 deterministic rules
+          </span>
+          <span class="al-hero-meta-item">
+            <span class="al-hero-meta-dot" aria-hidden="true"></span>
+            No model call, by design
+          </span>
+          <span class="al-hero-meta-item">
+            <span class="al-hero-meta-dot" aria-hidden="true"></span>
+            Sub-50ms, in-browser
+          </span>
+          <span class="al-hero-meta-item">
+            <span class="al-hero-meta-dot" aria-hidden="true"></span>
+            Zero data egress
+          </span>
+        </div>
+      </section>
+
+      <!-- Linter shell -->
+      <div class="al-linter-shell" id="al-linter" aria-label="Apexlint interactive demo">
+
+        <!-- Tab bar -->
+        <div class="al-tab-bar" role="tablist" aria-label="Artifact type">
+          <button class="al-tab al-tab--active" data-al-tab="apex" role="tab" aria-selected="true">
+            Apex <span class="al-tab-ext">.cls</span>
+          </button>
+          <button class="al-tab" data-al-tab="flow" role="tab" aria-selected="false">
+            Flow <span class="al-tab-ext">.json</span>
+          </button>
+          <button class="al-tab" data-al-tab="n8n" role="tab" aria-selected="false">
+            n8n <span class="al-tab-ext">.json</span>
+          </button>
+          <span class="al-tab-bar-spacer"></span>
+          <div class="al-tab-bar-actions">
+            <button class="al-load-sample-btn" id="al-load-sample" aria-label="Load sample code">↺ Load sample</button>
+          </div>
+        </div>
+
+        <!-- Split pane: code ↔ findings -->
+        <div class="al-split">
+
+          <!-- Code pane (single, content swapped by JS) -->
+          <div class="al-code-pane" id="al-code-pane">
+            <div class="al-code-header">
+              <span class="al-code-filename al-mono" id="al-filename">OpportunityEnrichmentTrigger.cls</span>
+              <span class="al-code-sep" aria-hidden="true">·</span>
+              <span class="al-code-desc" id="al-desc">Agent-generated trigger: enrich each Opportunity on update</span>
+            </div>
+            <div class="al-code-body" id="al-code-body">
+              <!-- Rendered code lines -->
+              <div class="al-code-lines" id="al-code-lines" role="group" aria-label="Source code with highlighted findings"></div>
+              <!-- Paste overlay: hidden textarea for input capture -->
+              <textarea
+                id="al-code-textarea"
+                class="al-code-textarea"
+                aria-label="Source code — paste here to lint your own code"
+                spellcheck="false"
+                autocorrect="off"
+                autocapitalize="off"
+                autocomplete="off"
+                data-gramm="false"
+                placeholder="Paste code here to lint it…"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Findings panel (always visible) -->
+          <div class="al-findings-pane" id="al-findings-pane" aria-label="Lint findings">
+            <div class="al-findings-header-bar">
+              <span class="al-findings-count" id="al-findings-header" aria-live="polite" aria-atomic="true">Loading…</span>
+              <div class="al-sort-bar" role="group" aria-label="Sort findings by">
+                <span class="al-sort-label" aria-hidden="true">Sort:</span>
+                <button class="al-sort-btn al-sort-btn--active" data-al-sort="severity" aria-label="Sort by severity" aria-pressed="true">sev</button>
+                <button class="al-sort-btn" data-al-sort="rule" aria-label="Sort by rule ID" aria-pressed="false">rule</button>
+                <button class="al-sort-btn" data-al-sort="line" aria-label="Sort by line number" aria-pressed="false">line</button>
+              </div>
+            </div>
+            <div class="al-findings-list" id="al-findings-list" role="list" aria-label="Lint findings" aria-live="polite" aria-atomic="false">
+              <!-- Findings rendered by app.ts -->
+              <div class="al-findings-empty">Loading…</div>
+            </div>
+          </div>
+
+        </div><!-- /.al-split -->
+      </div><!-- /.al-linter-shell -->
+
+      <!-- How it works -->
+      <section class="al-how" aria-labelledby="al-how-h2">
+        <h2 class="al-how-h2" id="al-how-h2">How it works — and why deterministic rules, not an LLM</h2>
+        <div class="al-how-grid">
+          <div class="al-how-card">
+            <div class="al-how-card-label">Determinism</div>
+            <h3 class="al-how-card-title">Same input, byte-identical output</h3>
+            <p class="al-how-card-body">You don't put a non-deterministic black box on the production gate. Rules produce the same findings every run — CI-gateable, postmortem-citable.</p>
+          </div>
+          <div class="al-how-card">
+            <div class="al-how-card-label">Latency</div>
+            <h3 class="al-how-card-title">Sub-50ms, zero network</h3>
+            <p class="al-how-card-body">No model call, no spinner. The rule engine runs in your tab. Source code never leaves the browser. Nothing to leak.</p>
+          </div>
+          <div class="al-how-card">
+            <div class="al-how-card-label">Auditability</div>
+            <h3 class="al-how-card-title">Every finding cites a rule ID</h3>
+            <p class="al-how-card-body">AP-001 — not "the model said so." Each rule has a fixture pair (passing + failing) in the public repo. The claim is checkable.</p>
+          </div>
+          <div class="al-how-card">
+            <div class="al-how-card-label">Positioning</div>
+            <h3 class="al-how-card-title">LLM for the fuzzy; rules for the gate</h3>
+            <p class="al-how-card-body">Reserve the LLM for explaining a finding, not deciding it. Knowing when not to use an AI is the architectural signal.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Comparison table -->
+      <section class="al-compare" aria-labelledby="al-compare-h2">
+        <h2 class="al-compare-h2" id="al-compare-h2">LLM reviewer vs. deterministic rules</h2>
+        <div class="al-table-wrap">
+          <table class="al-table" aria-label="Comparison of LLM reviewer versus Apexlint deterministic rules">
+            <thead>
+              <tr>
+                <th>Concern</th>
+                <th>LLM-as-reviewer</th>
+                <th>Apexlint (deterministic)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Determinism</td>
+                <td class="al-x">Same input, different findings run to run. Can't gate CI on it.</td>
+                <td class="al-check">Same input → byte-identical findings, every time. CI-gateable.</td>
+              </tr>
+              <tr>
+                <td>Latency</td>
+                <td class="al-x">1–5s per review, network round-trip.</td>
+                <td class="al-check">Sub-50ms, in-browser, no network.</td>
+              </tr>
+              <tr>
+                <td>Secrets / data egress</td>
+                <td class="al-x">Source code leaves the building to a third party.</td>
+                <td class="al-check">Code never leaves the tab. Nothing to leak.</td>
+              </tr>
+              <tr>
+                <td>Auditability</td>
+                <td class="al-x">"The model said so" — no rule to cite in a postmortem.</td>
+                <td class="al-check">Every finding cites a rule ID + fixture; reviewable in a public repo.</td>
+              </tr>
+              <tr>
+                <td>Cost</td>
+                <td class="al-x">Per-token, scales with codebase.</td>
+                <td class="al-check">Zero marginal cost.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Honest limits -->
+      <div class="al-limits" id="al-limits">
+        <button class="al-limits-toggle" id="al-limits-toggle" aria-expanded="false" aria-controls="al-limits-body">
+          <span>What this can't catch →</span>
+          <span class="al-limits-chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="al-limits-body" id="al-limits-body" role="region" aria-label="Honest limits of Apexlint">
+          <div class="al-limits-col">
+            <h3>Bounded rule pack, by design</h3>
+            <ul>
+              <li>PMD's Apex ruleset has hundreds of rules. Apexlint ships 16 — the most common agent-generated failure modes.</li>
+              <li>A tight, auditable pack you can reason about beats a sprawling one nobody trusts.</li>
+              <li>Heuristic, not full AST. Rules use comment-strip + brace-depth + regex. Demonstrates the architecture, not production-grade coverage.</li>
+              <li>No execution-time analysis. Real governor consumption needs to run the code.</li>
+            </ul>
+          </div>
+          <div class="al-limits-col">
+            <h3>Scope and honesty</h3>
+            <ul>
+              <li>n8n DSL version-pinned to the v1.x workflow schema. Newer versions may rename fields.</li>
+              <li>No production integration. The Metadata-API / n8n-REST connection layer needs a server-side OAuth flow — out of scope for a no-backend demo.</li>
+              <li>Synthetic samples only. Every rule and its fixture pair is in the public <code>apexlint-rules</code> repo — the claim is checkable, not asserted.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="al-footer">
+        <span>Apexlint · portfolio demo by Dallas Crilley · no real org data</span>
+        <div class="al-footer-links">
+          <a href="https://dallascrilley.com" class="al-footer-link">dallascrilley.com</a>
+          <a href="https://github.com/dallascrilley/apexlint-rules" class="al-footer-link">apexlint-rules →</a>
+        </div>
+      </footer>
+
+    </div><!-- /#al-app -->
+
+    <script>
+      import '../components/app.ts';
+    </script>
+  </body>
+</html>

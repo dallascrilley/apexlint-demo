@@ -1,0 +1,101 @@
+{
+  "apex": {
+    "id": "apex",
+    "label": "Apex",
+    "filename": "OpportunityEnrichmentTrigger.cls",
+    "description": "Agent-generated trigger: enrich each Opportunity on update",
+    "source": "trigger OpportunityEnrichmentTrigger on Opportunity (before update) {\n    for (Opportunity opp : Trigger.new) {\n        // AP-001 — query per record\n        List<Task> openTasks = [SELECT Id FROM Task WHERE WhatId = :opp.Id AND IsClosed = false];\n        opp.Open_Task_Count__c = openTasks.size();\n\n        // AP-004 — works in this sandbox, nowhere else\n        if (opp.OwnerId == null) {\n            opp.OwnerId = '0051g00000XyZaBAAV';\n        }\n\n        // AP-005 — Account may be null on a before-update insert path\n        opp.Account_Tier__c = opp.Account.Industry;\n    }\n\n    try {\n        update Trigger.new;\n    } catch (DmlException e) {\n        // AP-006 — TODO: handle\n    }\n}",
+    "findings": [
+      {
+        "ruleId": "AP-001",
+        "severity": "CRITICAL",
+        "locus": "Line 4",
+        "message": "SOQL inside a loop — hits the 100-query governor at record 101. Passes unit tests with <100 rows.",
+        "fix": "Hoist the query above the loop: collect opp.Id into a Set<Id>, query WHERE WhatId IN :ids, build a Map<Id, Integer>, then read it inside the loop.",
+        "lineNumber": 4,
+        "lineRange": [2, 11]
+      },
+      {
+        "ruleId": "AP-004",
+        "severity": "HIGH",
+        "locus": "Line 9",
+        "message": "Hardcoded ID '0051g00000XyZaBAAV' — valid only in the org it was copied from; breaks every sandbox and new prod.",
+        "fix": "Resolve the default owner via Custom Metadata (Default_Owner__mdt) or a Custom Setting; never literal-ID an owner.",
+        "lineNumber": 9,
+        "lineRange": [9, 9]
+      },
+      {
+        "ruleId": "AP-005",
+        "severity": "MEDIUM",
+        "locus": "Line 13",
+        "message": "opp.Account.Industry dereferences Account with no null guard — NPE when AccountId is null.",
+        "fix": "Guard: if (opp.AccountId != null) { … }, or query the parent and map it; relationship fields are not auto-loaded in triggers.",
+        "lineNumber": 13,
+        "lineRange": [13, 13]
+      },
+      {
+        "ruleId": "AP-006",
+        "severity": "MEDIUM",
+        "locus": "Line 19",
+        "message": "Empty catch swallows the DmlException — the failure vanishes with no signal.",
+        "fix": "Re-throw, or addError() on the record, or publish a Platform Event / Log__c. A bare // TODO ships the bug.",
+        "lineNumber": 19,
+        "lineRange": [19, 21]
+      }
+    ]
+  },
+  "flow": {
+    "id": "flow",
+    "label": "Flow",
+    "filename": "Lead_Round_Robin_Assign.flow-meta.xml (JSON export)",
+    "description": "Agent-generated round-robin lead assignment flow",
+    "source": "{\n  \"Flow\": {\n    \"label\": \"Lead Round Robin Assign\",\n    \"processType\": \"AutoLaunchedFlow\",\n    \"start\": { \"connector\": { \"targetReference\": \"Assign_Owner\" } },\n    \"assignments\": [\n      {\n        \"name\": \"Assign_Owner\",\n        \"assignmentItems\": [\n          { \"assignToReference\": \"$Record.OwnerId\", \"operator\": \"Assign\",\n            \"value\": { \"stringValue\": \"00G1g000004ZxYZEA0\" } }\n        ],\n        \"connector\": { \"targetReference\": \"Update_Lead_Owner\" }\n      }\n    ],\n    \"recordUpdates\": [\n      {\n        \"name\": \"Update_Lead_Owner\",\n        \"object\": \"Lead\",\n        \"inputReference\": \"$Record\"\n      }\n    ]\n  }\n}",
+    "findings": [
+      {
+        "ruleId": "FL-001",
+        "severity": "HIGH",
+        "locus": "Node: Update_Lead_Owner",
+        "message": "recordUpdates has no faultConnector. A validation rule or lock contention throws an unhandled fault and the flow dies silently.",
+        "fix": "Add a Fault connector to a Screen (interactive) or an Apex_Error_Log subflow (autolaunched). Never leave DML faultless.",
+        "lineNumber": 18,
+        "lineRange": [18, 23]
+      },
+      {
+        "ruleId": "FL-002",
+        "severity": "HIGH",
+        "locus": "Node: Assign_Owner → OwnerId",
+        "message": "Hardcoded ID '00G1g000004ZxYZEA0' (a Queue) in the assignment — breaks on deploy to any other org.",
+        "fix": "Resolve the fallback queue with a Get Records on Group WHERE DeveloperName = 'Lead_Default_Queue', or store it in Custom Metadata.",
+        "lineNumber": 11,
+        "lineRange": [9, 14]
+      }
+    ]
+  },
+  "n8n": {
+    "id": "n8n",
+    "label": "n8n",
+    "filename": "Contact_Enrichment.json",
+    "description": "Agent-generated contact enrichment workflow",
+    "source": "{\n  \"name\": \"Contact Enrichment\",\n  \"settings\": {},\n  \"nodes\": [\n    {\n      \"name\": \"Webhook\",\n      \"type\": \"n8n-nodes-base.webhook\",\n      \"parameters\": {\n        \"path\": \"enrich\",\n        \"authentication\": \"none\"\n      }\n    },\n    {\n      \"name\": \"Enrich Contact\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"parameters\": {\n        \"method\": \"POST\",\n        \"url\": \"https://api.enrich.example/v1/lookup\"\n      },\n      \"retryOnFail\": false,\n      \"continueOnFail\": false\n    },\n    {\n      \"name\": \"Notify Owner\",\n      \"type\": \"n8n-nodes-base.emailSend\",\n      \"parameters\": {\n        \"toEmail\": \"={{$json.ownerEmail}}\"\n      }\n    }\n  ]\n}",
+    "findings": [
+      {
+        "ruleId": "N8-001",
+        "severity": "HIGH",
+        "locus": "Workflow settings",
+        "message": "settings.errorWorkflow is empty. Any node throwing fails the run silently — the contact is never enriched and nobody is told.",
+        "fix": "Set settings.errorWorkflow to a workflow that posts to Slack or writes to a dead-letter store.",
+        "lineNumber": 2,
+        "lineRange": [2, 3]
+      },
+      {
+        "ruleId": "N8-002",
+        "severity": "HIGH",
+        "locus": "Node: Enrich Contact",
+        "message": "HTTP POST with retryOnFail: false — one transient 5xx from the enrichment API permanently drops the record.",
+        "fix": "Set retryOnFail: true, maxTries: 3, waitBetweenTries: 1000. One transient failure should not be permanent.",
+        "lineNumber": 20,
+        "lineRange": [14, 22]
+      }
+    ]
+  }
+}
