@@ -1,0 +1,4 @@
+# Language-bar accuracy: this is a TypeScript/JavaScript project whose theme
+# happens to be one large stylesheet. Exclude CSS from GitHub's linguist stats
+# so the profile language bar reflects the actual code, not the theme.
+*.css linguist-vendored=true

@@ -1,9 +1,10 @@
 ---
 // Apexlint — lint the ops-code your agent shipped
-// Static page; all linting runs client-side from deterministic rule engine.
+// Astro static page + a live Cloudflare Pages Function (POST /apexlint/lint)
+// running the same deterministic rule engine server-side.
 import '../styles/apexlint.css';
 const title = "Apexlint — Your agent wrote Apex at 2am. Who reviewed it?";
-const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 deterministic rules. No model call — by design.";
+const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 rules, run client-side and on a live backend. No model call — by design.";
 ---
 <!doctype html>
 <html lang="en">
@@ -31,15 +32,15 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
         <span class="al-nav-sep" aria-hidden="true"></span>
         <span class="al-nav-tagline">Lint the ops-code your agent shipped.</span>
         <span class="al-nav-spacer"></span>
-        <span class="al-nav-badge">portfolio demo · synthetic</span>
+        <span class="al-nav-badge">portfolio demo · live backend</span>
       </nav>
 
       <!-- Synthetic data banner -->
       <div class="al-banner" id="al-banner" role="status" aria-live="polite">
-        <span class="al-banner-icon" aria-hidden="true">SYN</span>
+        <span class="al-banner-icon" aria-hidden="true">REAL</span>
         <p class="al-banner-text">
-          <strong>Synthetic code only — this is a portfolio demo, not a connected org.</strong>
-          All linting runs on pre-loaded sample code, in your browser. No live model, no real org, no invented benchmarks. <em>The determinism is the point.</em>
+          <strong>Real deterministic linting of the code you submit.</strong>
+          Samples lint instantly in your browser; hit <em>“Lint on server”</em> to run the exact same 16-rule engine on the live Cloudflare backend (<code>POST /apexlint/lint</code>). No LLM, no real org, no secrets, no invented benchmarks. <em>The determinism is the point.</em>
         </p>
         <button class="al-banner-dismiss" id="al-banner-dismiss" aria-label="Dismiss banner">×</button>
       </div>
@@ -90,6 +91,7 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
           </button>
           <span class="al-tab-bar-spacer"></span>
           <div class="al-tab-bar-actions">
+            <button class="al-load-sample-btn" id="al-lint-server" aria-label="Lint the current code on the live backend">⚡ Lint on server</button>
             <button class="al-load-sample-btn" id="al-load-sample" aria-label="Load sample code">↺ Load sample</button>
           </div>
         </div>
@@ -232,8 +234,8 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
             <h3>Scope and honesty</h3>
             <ul>
               <li>n8n DSL version-pinned to the v1.x workflow schema. Newer versions may rename fields.</li>
-              <li>No production integration. The Metadata-API / n8n-REST connection layer needs a server-side OAuth flow — out of scope for a no-backend demo.</li>
-              <li>Synthetic samples only. Every rule and its fixture pair is in the public <code>apexlint-rules</code> repo — the claim is checkable, not asserted.</li>
+              <li>No production org integration. The Metadata-API / n8n-REST connection layer needs a server-side OAuth flow — out of scope. The <code>/apexlint/lint</code> backend lints code you paste; it does not pull from your org.</li>
+              <li>Every rule and its fixture pair is in this public repo, with a <code>node --test</code> suite — the claim is checkable, not asserted.</li>
             </ul>
           </div>
         </div>
@@ -244,7 +246,8 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
         <span>Apexlint · portfolio demo by Dallas Crilley · no real org data</span>
         <div class="al-footer-links">
           <a href="https://dallascrilley.com" class="al-footer-link">dallascrilley.com</a>
-          <a href="https://github.com/dallascrilley/apexlint-rules" class="al-footer-link">apexlint-rules →</a>
+          <a href="https://demos.dallascrilley.com/apexlint" class="al-footer-link">live demo →</a>
+          <a href="https://github.com/dallascrilley/apexlint-demo" class="al-footer-link">source →</a>
         </div>
       </footer>
 

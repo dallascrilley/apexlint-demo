@@ -3,11 +3,12 @@
    "type": "module",
    "version": "1.0.0",
    "private": false,
-   "description": "Apexlint — client-side linter for Apex, Flow JSON, and n8n DSL. Public portfolio demo.",
+   "description": "Apexlint — deterministic linter for Apex, Flow JSON, and n8n DSL, with a live Cloudflare Pages Function backend. Public portfolio demo.",
    "scripts": {
       "dev": "astro dev",
       "build": "astro build",
-      "preview": "astro preview"
+      "preview": "astro preview",
+      "test": "node --test"
    },
    "dependencies": {
       "astro": "^5.0.0"

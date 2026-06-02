@@ -48,6 +48,7 @@ async function init(): Promise<void> {
   wireSort();
   wireTextarea();
   wireLoadSample();
+  wireLintServer();
   wireKeyboard();
   switchTab('apex');
 }
@@ -509,6 +510,68 @@ function wireLoadSample(): void {
     if (ta) ta.value = sample.source;
     renderCodeLines(sample.source);
     lint(sample.source);
+  });
+}
+
+// ─── Server lint (live backend, POST /apexlint/lint) ────────────────────────────
+
+interface LintResponse {
+  tab: TabId;
+  findings: Finding[];
+  counts: Record<string, number>;
+  error?: string;
+}
+
+/**
+ * Run the current source against the LIVE Cloudflare Pages Function at
+ * POST /apexlint/lint. The server runs the same deterministic engine, so
+ * findings are byte-identical to the client path — this proves the demo has a
+ * real backend, not just client-side JS. (Mirrors inboxward's live-inspect path.)
+ */
+async function lintOnServer(tab: TabId, source: string): Promise<Finding[]> {
+  const res = await fetch('/apexlint/lint', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ tab, source }),
+  });
+  const payload = (await res.json().catch(() => null)) as LintResponse | null;
+  if (!res.ok || !payload || payload.error) {
+    const message = payload && typeof payload.error === 'string' ? payload.error : `Server lint failed (${res.status})`;
+    throw new Error(message);
+  }
+  return payload.findings ?? [];
+}
+
+function wireLintServer(): void {
+  const btn = $('al-lint-server') as HTMLButtonElement | null;
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    const ta = codeTextarea();
+    const source = ta ? ta.value : '';
+    if (!source.trim()) return;
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '… linting on server';
+    const header = $('al-findings-header');
+
+    try {
+      const findings = await lintOnServer(activeTab, source);
+      useCustomSource = true;
+      currentFindings = sortFindings(findings, sortKey);
+      selectedFindingIdx = null;
+      expandedFixes.clear();
+      updateFindingsHeader(findings);
+      renderFindings();
+      clearCodeHighlight();
+      if (header) header.textContent += ' · via live backend';
+    } catch (err) {
+      if (header) header.textContent = err instanceof Error ? err.message : 'Server lint failed.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   });
 }
 

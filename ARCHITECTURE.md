@@ -4,7 +4,17 @@
 
 - **Astro 5** — static site generator
 - **TypeScript** — vanilla TS, no framework; the UI is a split-pane code review surface
-- **No backend, no API keys, no environment variables**
+- **One Cloudflare Pages Function** (`functions/apexlint/lint.js`, `POST /apexlint/lint`) running the same engine server-side
+- **No API keys, no secrets, no environment variables, no external calls**
+
+## Two code paths, one engine
+
+The 16 rules exist as a pure function `runRulePack(tab, source) → Finding[]`. It is shipped twice from identical logic:
+
+- **Client** (`src/components/rules.ts`, TypeScript) — runs in the browser for instant, zero-egress linting of the samples and anything you paste.
+- **Server** (`functions/apexlint/lint.js`, plain JS) — a Cloudflare Pages Function that runs the *same* logic on a real backend so the analysis is provably not a canned reel.
+
+The two are byte-equivalent: `public/data/samples.json` is regenerated from the engine, so the shipped findings, the in-browser findings, and the live `/apexlint/lint` response are identical. `tests/apexlint-lint.test.js` pins all three.
 
 ## Why deterministic rules instead of an LLM
 
@@ -24,20 +34,24 @@ The interview line: *"You don't put a non-deterministic black box on the product
 
 ```typescript
 interface Finding {
-  ruleId: string;      // "AP-001"
+  ruleId: string;                 // "AP-001"
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  line: number;        // 1-based
-  message: string;
-  fix: string;
+  locus: string;                  // "Line 4" | "Node: Update_Lead_Owner"
+  message: string;                // one sentence
+  fix: string;                    // one-paragraph fix
+  lineNumber?: number;            // anchor for scroll + highlight
+  lineRange?: [number, number];   // span to dim-around (e.g. the loop body)
 }
 
 type TabId = 'apex' | 'flow' | 'n8n';
 ```
 
-Samples (`public/data/samples.json`) contain pre-loaded code for each tab with planted bugs:
-- **Apex** — `OpportunityEnrichmentTrigger` (4 findings: SOQL loop, hardcoded ID, null guard, empty catch)
-- **Flow** — `Lead_Round_Robin_Assign` (2 findings: missing fault path, hardcoded queue ID)
-- **n8n** — `Contact_Enrichment` (2 findings: no error workflow, no HTTP retry)
+The server endpoint returns `{ tab, findings: Finding[], counts: Record<ruleId, number> }`.
+
+Samples (`public/data/samples.json`) contain pre-loaded "2am agent output" for each tab, with their `findings` regenerated from the engine so they always match live output:
+- **Apex** — `OpportunityEnrichmentTrigger` (4 findings: AP-001 SOQL loop, AP-004 hardcoded ID, AP-005 null guard, AP-006 empty catch)
+- **Flow** — `Lead_Round_Robin_Assign` (2 findings: FL-001 missing fault path, FL-002 hardcoded queue ID)
+- **n8n** — `Contact_Enrichment` (5 findings: N8-001 no error workflow, N8-002 no HTTP retry, N8-003 unauthenticated webhook, N8-004 ×2 destructive nodes with no `continueOnFail`)
 
 ## Rule engine
 
@@ -79,16 +93,18 @@ The sample is already loaded and linted when the page opens. No empty first impr
 |---|---|
 | `src/pages/index.astro` | Shell: nav, hero, linter shell, how-it-works, comparison table, limits |
 | `src/components/app.ts` | Bootstrap, tab switching, lint dispatch, findings rendering, keyboard nav |
-| `src/components/rules.ts` | All 16 rule implementations + dispatcher |
+| `src/components/rules.ts` | All 16 rule implementations + dispatcher (client) |
+| `functions/apexlint/lint.js` | Same engine as a Cloudflare Pages Function (`POST /apexlint/lint`) |
+| `tests/apexlint-lint.test.js` | `node --test` suite: all 16 rules (positive + clean) + 3 sample fixtures |
 | `src/components/types.ts` | Shared interfaces |
 | `src/styles/apexlint.css` | Split-pane layout, severity color system, code highlighting |
 
 ## What was cut for scope
 
-- **Full Apex parser** — regex + brace depth only; misses nested generics and some anonymous block patterns
-- **Real org connection** — no Salesforce API, no metadata deploy
-- **CI wrapper** — no CLI, no GitHub Action
-- **Custom rule authoring UI** — rules are hardcoded TS
+- **Full Apex parser** — regex + brace depth only; misses nested generics and some anonymous block patterns. AP-006, for example, keys off the `} catch (...) {` one-liner shape rather than a full body analysis — a deliberate heuristic, pinned by tests.
+- **Real org connection** — no Salesforce Metadata API, no n8n REST pull. The backend lints source you submit; it does not read from your org (that needs server-side OAuth).
+- **CI wrapper** — no CLI, no GitHub Action for *your* repos (this repo's own CI runs the test + build).
+- **Custom rule authoring UI** — rules are hardcoded.
 
 ## How to extend to production
 

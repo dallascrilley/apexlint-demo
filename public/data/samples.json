@@ -13,16 +13,22 @@
         "message": "SOQL inside a loop — hits the 100-query governor at record 101. Passes unit tests with <100 rows.",
         "fix": "Hoist the query above the loop: collect opp.Id into a Set<Id>, query WHERE WhatId IN :ids, build a Map<Id, Integer>, then read it inside the loop.",
         "lineNumber": 4,
-        "lineRange": [2, 11]
+        "lineRange": [
+          2,
+          15
+        ]
       },
       {
         "ruleId": "AP-004",
         "severity": "HIGH",
         "locus": "Line 9",
         "message": "Hardcoded ID '0051g00000XyZaBAAV' — valid only in the org it was copied from; breaks every sandbox and new prod.",
-        "fix": "Resolve the default owner via Custom Metadata (Default_Owner__mdt) or a Custom Setting; never literal-ID an owner.",
+        "fix": "Resolve the owner/record via Custom Metadata (e.g., Default_Owner__mdt) or a Custom Setting; never literal-ID a record reference.",
         "lineNumber": 9,
-        "lineRange": [9, 9]
+        "lineRange": [
+          9,
+          9
+        ]
       },
       {
         "ruleId": "AP-005",
@@ -31,16 +37,22 @@
         "message": "opp.Account.Industry dereferences Account with no null guard — NPE when AccountId is null.",
         "fix": "Guard: if (opp.AccountId != null) { … }, or query the parent and map it; relationship fields are not auto-loaded in triggers.",
         "lineNumber": 13,
-        "lineRange": [13, 13]
+        "lineRange": [
+          13,
+          13
+        ]
       },
       {
         "ruleId": "AP-006",
         "severity": "MEDIUM",
-        "locus": "Line 19",
-        "message": "Empty catch swallows the DmlException — the failure vanishes with no signal.",
+        "locus": "Line 18",
+        "message": "Empty catch swallows the exception — the failure vanishes with no signal.",
         "fix": "Re-throw, or addError() on the record, or publish a Platform Event / Log__c. A bare // TODO ships the bug.",
-        "lineNumber": 19,
-        "lineRange": [19, 21]
+        "lineNumber": 18,
+        "lineRange": [
+          18,
+          18
+        ]
       }
     ]
   },
@@ -55,19 +67,25 @@
         "ruleId": "FL-001",
         "severity": "HIGH",
         "locus": "Node: Update_Lead_Owner",
-        "message": "recordUpdates has no faultConnector. A validation rule or lock contention throws an unhandled fault and the flow dies silently.",
+        "message": "Update_Lead_Owner (recordUpdates) has no faultConnector. A validation rule or lock contention throws an unhandled fault and the flow dies silently.",
         "fix": "Add a Fault connector to a Screen (interactive) or an Apex_Error_Log subflow (autolaunched). Never leave DML faultless.",
-        "lineNumber": 18,
-        "lineRange": [18, 23]
+        "lineNumber": 13,
+        "lineRange": [
+          13,
+          14
+        ]
       },
       {
         "ruleId": "FL-002",
         "severity": "HIGH",
         "locus": "Node: Assign_Owner → OwnerId",
-        "message": "Hardcoded ID '00G1g000004ZxYZEA0' (a Queue) in the assignment — breaks on deploy to any other org.",
-        "fix": "Resolve the fallback queue with a Get Records on Group WHERE DeveloperName = 'Lead_Default_Queue', or store it in Custom Metadata.",
+        "message": "Hardcoded ID '00G1g000004ZxYZEA0' in the assignment — breaks on deploy to any other org.",
+        "fix": "Resolve the record with a Get Records node on the appropriate object (e.g., Group WHERE DeveloperName = 'Lead_Default_Queue'), or store it in Custom Metadata.",
         "lineNumber": 11,
-        "lineRange": [9, 14]
+        "lineRange": [
+          5,
+          6
+        ]
       }
     ]
   },
@@ -82,19 +100,61 @@
         "ruleId": "N8-001",
         "severity": "HIGH",
         "locus": "Workflow settings",
-        "message": "settings.errorWorkflow is empty. Any node throwing fails the run silently — the contact is never enriched and nobody is told.",
-        "fix": "Set settings.errorWorkflow to a workflow that posts to Slack or writes to a dead-letter store.",
-        "lineNumber": 2,
-        "lineRange": [2, 3]
+        "message": "settings.errorWorkflow is empty. Any node throwing fails the run silently — no alert, no retry, no dead-letter store.",
+        "fix": "Set settings.errorWorkflow to a workflow ID that posts to Slack or writes to a dead-letter store. Every prod workflow needs an error workflow.",
+        "lineNumber": 3,
+        "lineRange": [
+          3,
+          4
+        ]
       },
       {
         "ruleId": "N8-002",
         "severity": "HIGH",
         "locus": "Node: Enrich Contact",
-        "message": "HTTP POST with retryOnFail: false — one transient 5xx from the enrichment API permanently drops the record.",
-        "fix": "Set retryOnFail: true, maxTries: 3, waitBetweenTries: 1000. One transient failure should not be permanent.",
-        "lineNumber": 20,
-        "lineRange": [14, 22]
+        "message": "HTTP POST with retryOnFail: false — one transient 5xx permanently drops the record.",
+        "fix": "Set retryOnFail: true, maxTries: 3, waitBetweenTries: 1000. Transient failures should not be permanent.",
+        "lineNumber": 14,
+        "lineRange": [
+          14,
+          15
+        ]
+      },
+      {
+        "ruleId": "N8-003",
+        "severity": "MEDIUM",
+        "locus": "Node: Webhook",
+        "message": "Webhook node has no authentication — any caller can trigger this workflow.",
+        "fix": "Set authentication to 'headerAuth' or 'basicAuth'. Unauthenticated webhooks are an open endpoint in prod.",
+        "lineNumber": 6,
+        "lineRange": [
+          6,
+          7
+        ]
+      },
+      {
+        "ruleId": "N8-004",
+        "severity": "MEDIUM",
+        "locus": "Node: Enrich Contact",
+        "message": "Destructive node (httpRequest) has no continueOnFail — one failure halts the entire downstream chain.",
+        "fix": "Set continueOnFail: true and add an IF node to check $node[...].error before continuing.",
+        "lineNumber": 14,
+        "lineRange": [
+          14,
+          15
+        ]
+      },
+      {
+        "ruleId": "N8-004",
+        "severity": "MEDIUM",
+        "locus": "Node: Notify Owner",
+        "message": "Destructive node (emailSend) has no continueOnFail — one failure halts the entire downstream chain.",
+        "fix": "Set continueOnFail: true and add an IF node to check $node[...].error before continuing.",
+        "lineNumber": 24,
+        "lineRange": [
+          24,
+          25
+        ]
       }
     ]
   }
