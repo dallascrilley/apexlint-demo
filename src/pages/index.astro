@@ -4,7 +4,7 @@
 // running the same deterministic rule engine server-side.
 import '../styles/apexlint.css';
 const title = "Apexlint — Your agent wrote Apex at 2am. Who reviewed it?";
-const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 rules, run client-side and on a live backend. No model call — by design.";
+const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 deterministic rules. No model call — by design.";
 ---
 <!doctype html>
 <html lang="en">
@@ -17,9 +17,10 @@ const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 r
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="robots" content="noindex" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" />
   </head>
   <body>
     <div class="al-root" id="al-app">
@@ -148,26 +149,103 @@ const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 r
       <section class="al-how" aria-labelledby="al-how-h2">
         <h2 class="al-how-h2" id="al-how-h2">How it works — and why deterministic rules, not an LLM</h2>
         <div class="al-how-grid">
+
           <div class="al-how-card">
-            <div class="al-how-card-label">Determinism</div>
-            <h3 class="al-how-card-title">Same input, byte-identical output</h3>
-            <p class="al-how-card-body">You don't put a non-deterministic black box on the production gate. Rules produce the same findings every run — CI-gateable, postmortem-citable.</p>
+            <div class="al-how-card-titlebar" aria-hidden="true">
+              <span class="al-how-card-dots">
+                <span class="al-how-card-dot al-how-card-dot--close"></span>
+                <span class="al-how-card-dot al-how-card-dot--min"></span>
+                <span class="al-how-card-dot al-how-card-dot--max"></span>
+              </span>
+              <span class="al-how-card-label">determinism.ts</span>
+            </div>
+            <div class="al-how-card-inner">
+              <div class="al-how-card-gutter" aria-hidden="true">
+                <span class="al-how-card-linenum">1</span>
+                <span class="al-how-card-linenum">2</span>
+                <span class="al-how-card-linenum">3</span>
+                <span class="al-how-card-linenum">4</span>
+                <span class="al-how-card-linenum">5</span>
+              </div>
+              <div class="al-how-card-content">
+                <h3 class="al-how-card-title">Same input, byte-identical output</h3>
+                <p class="al-how-card-body">You don't put a non-deterministic black box on the production gate. Rules produce the same findings every run — CI-gateable, postmortem-citable.</p>
+              </div>
+            </div>
           </div>
+
           <div class="al-how-card">
-            <div class="al-how-card-label">Latency</div>
-            <h3 class="al-how-card-title">Sub-50ms, zero network</h3>
-            <p class="al-how-card-body">No model call, no spinner. The rule engine runs in your tab. Source code never leaves the browser. Nothing to leak.</p>
+            <div class="al-how-card-titlebar" aria-hidden="true">
+              <span class="al-how-card-dots">
+                <span class="al-how-card-dot al-how-card-dot--close"></span>
+                <span class="al-how-card-dot al-how-card-dot--min"></span>
+                <span class="al-how-card-dot al-how-card-dot--max"></span>
+              </span>
+              <span class="al-how-card-label">latency.ts</span>
+            </div>
+            <div class="al-how-card-inner">
+              <div class="al-how-card-gutter" aria-hidden="true">
+                <span class="al-how-card-linenum">1</span>
+                <span class="al-how-card-linenum">2</span>
+                <span class="al-how-card-linenum">3</span>
+                <span class="al-how-card-linenum">4</span>
+                <span class="al-how-card-linenum">5</span>
+              </div>
+              <div class="al-how-card-content">
+                <h3 class="al-how-card-title">Sub-50ms, zero network</h3>
+                <p class="al-how-card-body">No model call, no spinner. The rule engine runs in your tab. Source code never leaves the browser. Nothing to leak.</p>
+              </div>
+            </div>
           </div>
+
           <div class="al-how-card">
-            <div class="al-how-card-label">Auditability</div>
-            <h3 class="al-how-card-title">Every finding cites a rule ID</h3>
-            <p class="al-how-card-body">AP-001 — not "the model said so." Each rule has a fixture pair (passing + failing) in the public repo. The claim is checkable.</p>
+            <div class="al-how-card-titlebar" aria-hidden="true">
+              <span class="al-how-card-dots">
+                <span class="al-how-card-dot al-how-card-dot--close"></span>
+                <span class="al-how-card-dot al-how-card-dot--min"></span>
+                <span class="al-how-card-dot al-how-card-dot--max"></span>
+              </span>
+              <span class="al-how-card-label">auditability.ts</span>
+            </div>
+            <div class="al-how-card-inner">
+              <div class="al-how-card-gutter" aria-hidden="true">
+                <span class="al-how-card-linenum">1</span>
+                <span class="al-how-card-linenum">2</span>
+                <span class="al-how-card-linenum">3</span>
+                <span class="al-how-card-linenum">4</span>
+                <span class="al-how-card-linenum">5</span>
+              </div>
+              <div class="al-how-card-content">
+                <h3 class="al-how-card-title">Every finding cites a rule ID</h3>
+                <p class="al-how-card-body">AP-001 — not "the model said so." Each rule has a fixture pair (passing + failing) in the public repo. The claim is checkable.</p>
+              </div>
+            </div>
           </div>
+
           <div class="al-how-card">
-            <div class="al-how-card-label">Positioning</div>
-            <h3 class="al-how-card-title">LLM for the fuzzy; rules for the gate</h3>
-            <p class="al-how-card-body">Reserve the LLM for explaining a finding, not deciding it. Knowing when not to use an AI is the architectural signal.</p>
+            <div class="al-how-card-titlebar" aria-hidden="true">
+              <span class="al-how-card-dots">
+                <span class="al-how-card-dot al-how-card-dot--close"></span>
+                <span class="al-how-card-dot al-how-card-dot--min"></span>
+                <span class="al-how-card-dot al-how-card-dot--max"></span>
+              </span>
+              <span class="al-how-card-label">architecture.ts</span>
+            </div>
+            <div class="al-how-card-inner">
+              <div class="al-how-card-gutter" aria-hidden="true">
+                <span class="al-how-card-linenum">1</span>
+                <span class="al-how-card-linenum">2</span>
+                <span class="al-how-card-linenum">3</span>
+                <span class="al-how-card-linenum">4</span>
+                <span class="al-how-card-linenum">5</span>
+              </div>
+              <div class="al-how-card-content">
+                <h3 class="al-how-card-title">LLM for the fuzzy; rules for the gate</h3>
+                <p class="al-how-card-body">Reserve the LLM for explaining a finding, not deciding it. Knowing when not to use an AI is the architectural signal.</p>
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 
@@ -178,36 +256,42 @@ const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 r
           <table class="al-table" aria-label="Comparison of LLM reviewer versus Apexlint deterministic rules">
             <thead>
               <tr>
-                <th>Concern</th>
+                <th aria-label="Row" aria-hidden="true">#</th>
+                <th>concern</th>
                 <th>LLM-as-reviewer</th>
                 <th>Apexlint (deterministic)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Determinism</td>
-                <td class="al-x">Same input, different findings run to run. Can't gate CI on it.</td>
-                <td class="al-check">Same input → byte-identical findings, every time. CI-gateable.</td>
+                <td aria-hidden="true">1</td>
+                <td>determinism</td>
+                <td><span class="al-x">Same input, different findings run to run. Can't gate CI on it.</span></td>
+                <td><span class="al-check">Same input → byte-identical findings, every time. CI-gateable.</span></td>
               </tr>
               <tr>
-                <td>Latency</td>
-                <td class="al-x">1–5s per review, network round-trip.</td>
-                <td class="al-check">Sub-50ms, in-browser, no network.</td>
+                <td aria-hidden="true">2</td>
+                <td>latency</td>
+                <td><span class="al-x">1–5s per review, network round-trip.</span></td>
+                <td><span class="al-check">Sub-50ms, in-browser, no network.</span></td>
               </tr>
               <tr>
-                <td>Secrets / data egress</td>
-                <td class="al-x">Source code leaves the building to a third party.</td>
-                <td class="al-check">Code never leaves the tab. Nothing to leak.</td>
+                <td aria-hidden="true">3</td>
+                <td>data_egress</td>
+                <td><span class="al-x">Source code leaves the building to a third party.</span></td>
+                <td><span class="al-check">Code never leaves the tab. Nothing to leak.</span></td>
               </tr>
               <tr>
-                <td>Auditability</td>
-                <td class="al-x">"The model said so" — no rule to cite in a postmortem.</td>
-                <td class="al-check">Every finding cites a rule ID + fixture; reviewable in a public repo.</td>
+                <td aria-hidden="true">4</td>
+                <td>auditability</td>
+                <td><span class="al-x">"The model said so" — no rule to cite in a postmortem.</span></td>
+                <td><span class="al-check">Every finding cites a rule ID + fixture; reviewable in a public repo.</span></td>
               </tr>
               <tr>
-                <td>Cost</td>
-                <td class="al-x">Per-token, scales with codebase.</td>
-                <td class="al-check">Zero marginal cost.</td>
+                <td aria-hidden="true">5</td>
+                <td>cost</td>
+                <td><span class="al-x">Per-token, scales with codebase.</span></td>
+                <td><span class="al-check">Zero marginal cost.</span></td>
               </tr>
             </tbody>
           </table>
@@ -235,7 +319,7 @@ const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 r
             <ul>
               <li>n8n DSL version-pinned to the v1.x workflow schema. Newer versions may rename fields.</li>
               <li>No production org integration. The Metadata-API / n8n-REST connection layer needs a server-side OAuth flow — out of scope. The <code>/apexlint/lint</code> backend lints code you paste; it does not pull from your org.</li>
-              <li>Every rule and its fixture pair is in this public repo, with a <code>node --test</code> suite — the claim is checkable, not asserted.</li>
+              <li>Every rule and its fixture pair is in the public <code>apexlint-demo</code> repo, with a <code>node --test</code> suite — the claim is checkable, not asserted.</li>
             </ul>
           </div>
         </div>
@@ -245,9 +329,7 @@ const description = "Deterministic linter for Apex, Flow JSON, and n8n DSL. 16 r
       <footer class="al-footer">
         <span>Apexlint · portfolio demo by Dallas Crilley · no real org data</span>
         <div class="al-footer-links">
-          <a href="https://dallascrilley.com" class="al-footer-link">dallascrilley.com</a>
-          <a href="https://demos.dallascrilley.com/apexlint" class="al-footer-link">live demo →</a>
-          <a href="https://github.com/dallascrilley/apexlint-demo" class="al-footer-link">source →</a>
+          <a href="https://github.com/dallascrilley/apexlint-demo" class="al-footer-link">apexlint-demo →</a>
         </div>
       </footer>
 

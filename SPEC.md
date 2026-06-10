@@ -8,7 +8,7 @@
 | **Slug** | `apexlint` |
 | **Lane fit** | L2 (Applied AI / AI Solutions Architect) primary |
 | **Live route** | `demos.dallascrilley.com/apexlint` |
-| **Rule source** | `github.com/dallascrilley/apexlint-rules` (public — 16 rules + the fixture pairs that prove them) |
+| **Rule source** | `github.com/dallascrilley/apexlint-demo` (public — 16 rules + the fixture pairs that prove them) |
 | **Status** | Spec — ready to build |
 | **Build estimate** | ~2 weeks |
 | **Accent token** | `--accent: oklch(62% 0.24 27)` ember-orange |
@@ -341,7 +341,7 @@ interface Finding {
 }
 ```
 
-**Deployment:** static route under `demos.dallascrilley.com/apexlint` via the demo-lab Cloudflare Pages pipeline. All linting is client-side island hydration. The rule pack + fixtures also publish to `github.com/dallascrilley/apexlint-rules` so the claim is independently verifiable.
+**Deployment:** static route under `demos.dallascrilley.com/apexlint` via the demo-lab Cloudflare Pages pipeline. All linting is client-side island hydration. The rule pack + fixtures also publish to `github.com/dallascrilley/apexlint-demo` so the claim is independently verifiable.
 
 ---
 
@@ -376,7 +376,7 @@ interface Finding {
 3. **No execution-time analysis.** Real governor consumption, coverage gaps, and dynamic data flow need to *run* the code. Apexlint is static-pattern only.
 4. **n8n DSL version-pinned** to the v1.x workflow schema; newer versions may rename fields.
 5. **No production integration.** The Metadata-API / n8n-REST connection layer is sketched in §9 but not wired — that would need a server-side OAuth flow, out of scope for a no-backend demo.
-6. **Verify it yourself.** Every rule and its passing/failing fixture pair lives in the public `apexlint-rules` repo. The demo's claim is checkable, not asserted.
+6. **Verify it yourself.** Every rule and its passing/failing fixture pair lives in the public `apexlint-demo` repo. The demo's claim is checkable, not asserted.
 
 ---
 
@@ -401,7 +401,7 @@ interface Finding {
 
 **Phase 1 — Shell + landing (2d):** Astro route; terminal-diagnostic brand pass (palette, JetBrains Mono + Inter); above-the-fold H1 "Your agent wrote Apex at 2am. Who reviewed it?", sub, CTA "Open the linter"; synthetic banner (shared component); honest-limits section.
 
-**Phase 2 — Rule engine + samples (4d):** `types.ts`; `runRulePack` dispatcher; all 16 rules with vitest fixture pairs (one passing, one failing per rule); the three §7 samples verbatim; prove AC2–AC5 in isolation before any UI. Publish `apexlint-rules` repo from this code.
+**Phase 2 — Rule engine + samples (4d):** `types.ts`; `runRulePack` dispatcher; all 16 rules with vitest fixture pairs (one passing, one failing per rule); the three §7 samples verbatim; prove AC2–AC5 in isolation before any UI. Publish `apexlint-demo` repo from this code.
 
 **Phase 3 — Interactive UI (4d):** `LintPanel.tsx` island; CodeMirror (JSON + Apex highlight, textarea fallback); paste + load-sample per tab; finding rows with severity dot/badge/locus/message/fix disclosure; **the code↔finding bind (scroll, rail, glow, dim) — the priority of the phase**; reverse line→finding select; keyboard nav; sort; clean state; responsive.
 
@@ -416,5 +416,5 @@ interface Finding {
 | Can regex + brace-depth detect SOQL-in-loop without false positives? | Strip comments/strings first, then match `SELECT` inside a tracked loop body. Low FP on the curated samples; document the heuristic limit. | High FP rate erodes trust — mitigate by narrowing samples to clean detection cases and stating the limit. |
 | Does CodeMirror have an Apex mode? | No official one; ship a minimal keyword highlighter (or SQL-proxy) for Apex; JSON mode is native for Flow/n8n. Degraded Apex highlight is acceptable if disclosed; don't block ship on it. | Cosmetic only. |
 | How to signal rule-based, not AI-powered? | "How it works" paragraph + §3 table + honest-limits. Never say "AI-powered linting." The determinism *is* the senior signal — lead with it. | Overstating capability backfires in interview; under-stating buries the best signal. |
-| Public rule repo? | Yes — `apexlint-rules` with the 16 rules + fixture pairs. Same view-source credibility play as Routely. | Without it, the claim is unverifiable; ship the repo. |
+| Public rule repo? | Yes — `apexlint-demo` with the 16 rules + fixture pairs. Same view-source credibility play as Routely. | Without it, the claim is unverifiable; ship the repo. |
 | Three tabs or Apex-only at launch? | Apex first; full three-tab is the target. If the build runs long, ship Apex + n8n, defer Flow (n8n is higher signal for the L2 buyer). | One tab reads thin. |
