@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .astro/
+tests/.engine-build/
 .wrangler/
 .env
 .dev.vars

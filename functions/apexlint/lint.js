@@ -15,9 +15,11 @@
  *
  * The pure helpers below (runRulePack + each rule) are exported so they can be
  * unit-tested without a network or a Workers runtime (see
- * ../../tests/apexlint-lint.test.js). Ported verbatim from the client-side
- * TypeScript engine (src/components/apexlint/rules.ts) — types stripped, logic
- * unchanged.
+ * ../../tests/apexlint-lint.test.js). This file is a hand-synchronized port of
+ * the client-side TypeScript engine (rules.ts) — types stripped, logic
+ * identical. Parity between the two is enforced by
+ * tests/engine-parity.test.js, which runs a fixture corpus through both
+ * implementations and asserts identical findings.
  */
 
 function json(data, init = {}) {
@@ -139,7 +141,7 @@ function runAP001(source) {
         severity: 'CRITICAL',
         locus: `Line ${i + 1}`,
         message: 'SOQL inside a loop — hits the 100-query governor at record 101. Passes unit tests with <100 rows.',
-        fix: 'Hoist the query above the loop: collect opp.Id into a Set<Id>, query WHERE WhatId IN :ids, build a Map<Id, Integer>, then read it inside the loop.',
+        fix: 'Hoist the query above the loop: collect the record IDs into a Set<Id> before the loop, run one query with WHERE <lookup field> IN :ids, build a Map keyed by Id, then read from the map inside the loop.',
         lineNumber: i + 1,
         lineRange: [loopStart + 1, loopEnd + 1],
       });
@@ -243,7 +245,7 @@ function runAP004(source) {
           severity: 'HIGH',
           locus: `Line ${i + 1}`,
           message: `Hardcoded ID '${id}' — valid only in the org it was copied from; breaks every sandbox and new prod.`,
-          fix: 'Resolve the owner/record via Custom Metadata (e.g., Default_Owner__mdt) or a Custom Setting; never literal-ID a record reference.',
+          fix: 'Resolve the record via Custom Metadata or a Custom Setting keyed by a stable DeveloperName, and look it up at runtime; never hardcode a record ID literal.',
           lineNumber: i + 1,
           lineRange: [i + 1, i + 1],
         });
@@ -302,24 +304,36 @@ function runAP006(source) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? '';
-    if (/\bcatch\b.*\{/.test(line)) {
-      // Find the closing brace of the catch block
-      let depth = (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length;
+    const catchIdx = line.search(/\bcatch\b/);
+    if (catchIdx >= 0 && line.indexOf('{', catchIdx) >= 0) {
+      // Count braces from the `catch` keyword onward so the try block's
+      // closing brace on the same line (`} catch (...) {`) is not miscounted
+      // as the catch body closing.
+      const fromCatch = line.slice(catchIdx);
+      let depth = (fromCatch.match(/\{/g) || []).length - (fromCatch.match(/\}/g) || []).length;
       let bodyEnd = i;
       let isEmpty = true;
 
-      for (let j = i + 1; j < lines.length && depth > 0; j++) {
-        const inner = lines[j] ?? '';
-        depth += (inner.match(/\{/g) || []).length;
-        depth -= (inner.match(/\}/g) || []).length;
+      if (depth <= 0) {
+        // One-line catch: the whole body sits between the braces on this line.
+        const open = fromCatch.indexOf('{');
+        const close = fromCatch.lastIndexOf('}');
+        const body = open >= 0 && close > open ? fromCatch.slice(open + 1, close) : '';
+        isEmpty = body.replace(/\/\*.*?\*\//g, '').replace(/\/\/.*$/, '').trim() === '';
+      } else {
+        for (let j = i + 1; j < lines.length && depth > 0; j++) {
+          const inner = lines[j] ?? '';
+          depth += (inner.match(/\{/g) || []).length;
+          depth -= (inner.match(/\}/g) || []).length;
 
-        if (depth > 0) {
-          const trimmed = inner.trim();
-          if (trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('*') && trimmed !== '') {
-            isEmpty = false;
+          if (depth > 0) {
+            const trimmed = inner.trim();
+            if (trimmed && !trimmed.startsWith('//') && !trimmed.startsWith('*') && trimmed !== '') {
+              isEmpty = false;
+            }
           }
+          bodyEnd = j;
         }
-        bodyEnd = j;
       }
 
       if (isEmpty) {
@@ -327,8 +341,8 @@ function runAP006(source) {
           ruleId: 'AP-006',
           severity: 'MEDIUM',
           locus: `Line ${i + 1}`,
-          message: 'Empty catch swallows the exception — the failure vanishes with no signal.',
-          fix: 'Re-throw, or addError() on the record, or publish a Platform Event / Log__c. A bare // TODO ships the bug.',
+          message: 'Catch block is empty (or comment-only) — the exception is swallowed with no rethrow, no logging, no signal.',
+          fix: 'Re-throw, or addError() on the record, or publish a Platform Event / log record. A bare // TODO ships the bug.',
           lineNumber: i + 1,
           lineRange: [i + 1, bodyEnd + 1],
         });
@@ -437,16 +451,20 @@ function runFL001(source) {
     ? (Array.isArray(flow.recordDeletes) ? flow.recordDeletes : [flow.recordDeletes])
     : [];
 
-  const dmlNodes = [...recordUpdates, ...recordCreates, ...recordDeletes];
+  const dmlNodes = [
+    ...recordUpdates.map((node) => ({ node, kind: 'recordUpdates' })),
+    ...recordCreates.map((node) => ({ node, kind: 'recordCreates' })),
+    ...recordDeletes.map((node) => ({ node, kind: 'recordDeletes' })),
+  ];
 
-  for (const node of dmlNodes) {
+  for (const { node, kind } of dmlNodes) {
     if (!node.faultConnector) {
       findings.push({
         ruleId: 'FL-001',
         severity: 'HIGH',
         locus: `Node: ${node.name}`,
-        message: `${node.name} (recordUpdates) has no faultConnector. A validation rule or lock contention throws an unhandled fault and the flow dies silently.`,
-        fix: 'Add a Fault connector to a Screen (interactive) or an Apex_Error_Log subflow (autolaunched). Never leave DML faultless.',
+        message: `${node.name} (${kind}) has no faultConnector. A validation rule or lock contention throws an unhandled fault and the flow dies silently.`,
+        fix: 'Add a Fault connector to a Screen (interactive flows) or an error-logging subflow (autolaunched flows). Never leave DML faultless.',
         lineNumber: findJsonNodeLine(source, node.name),
         lineRange: findJsonNodeRange(source, node.name),
       });
@@ -481,7 +499,7 @@ function runFL002(source) {
           severity: 'HIGH',
           locus: `Node: ${node.name} → ${item.assignToReference?.split('.').pop()}`,
           message: `Hardcoded ID '${val}' in the assignment — breaks on deploy to any other org.`,
-          fix: "Resolve the record with a Get Records node on the appropriate object (e.g., Group WHERE DeveloperName = 'Lead_Default_Queue'), or store it in Custom Metadata.",
+          fix: 'Resolve the record with a Get Records node filtered on a stable field (DeveloperName, Name), or store the ID in Custom Metadata — never paste an org-specific ID into a flow.',
           lineNumber: findJsonNodeLine(source, val),
           lineRange: findJsonNodeRange(source, node.name),
         });

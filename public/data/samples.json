@@ -11,7 +11,7 @@
         "severity": "CRITICAL",
         "locus": "Line 4",
         "message": "SOQL inside a loop — hits the 100-query governor at record 101. Passes unit tests with <100 rows.",
-        "fix": "Hoist the query above the loop: collect opp.Id into a Set<Id>, query WHERE WhatId IN :ids, build a Map<Id, Integer>, then read it inside the loop.",
+        "fix": "Hoist the query above the loop: collect the record IDs into a Set<Id> before the loop, run one query with WHERE <lookup field> IN :ids, build a Map keyed by Id, then read from the map inside the loop.",
         "lineNumber": 4,
         "lineRange": [
           2,
@@ -23,7 +23,7 @@
         "severity": "HIGH",
         "locus": "Line 9",
         "message": "Hardcoded ID '0051g00000XyZaBAAV' — valid only in the org it was copied from; breaks every sandbox and new prod.",
-        "fix": "Resolve the owner/record via Custom Metadata (e.g., Default_Owner__mdt) or a Custom Setting; never literal-ID a record reference.",
+        "fix": "Resolve the record via Custom Metadata or a Custom Setting keyed by a stable DeveloperName, and look it up at runtime; never hardcode a record ID literal.",
         "lineNumber": 9,
         "lineRange": [
           9,
@@ -46,12 +46,12 @@
         "ruleId": "AP-006",
         "severity": "MEDIUM",
         "locus": "Line 18",
-        "message": "Empty catch swallows the exception — the failure vanishes with no signal.",
-        "fix": "Re-throw, or addError() on the record, or publish a Platform Event / Log__c. A bare // TODO ships the bug.",
+        "message": "Catch block is empty (or comment-only) — the exception is swallowed with no rethrow, no logging, no signal.",
+        "fix": "Re-throw, or addError() on the record, or publish a Platform Event / log record. A bare // TODO ships the bug.",
         "lineNumber": 18,
         "lineRange": [
           18,
-          18
+          20
         ]
       }
     ]
@@ -68,7 +68,7 @@
         "severity": "HIGH",
         "locus": "Node: Update_Lead_Owner",
         "message": "Update_Lead_Owner (recordUpdates) has no faultConnector. A validation rule or lock contention throws an unhandled fault and the flow dies silently.",
-        "fix": "Add a Fault connector to a Screen (interactive) or an Apex_Error_Log subflow (autolaunched). Never leave DML faultless.",
+        "fix": "Add a Fault connector to a Screen (interactive flows) or an error-logging subflow (autolaunched flows). Never leave DML faultless.",
         "lineNumber": 13,
         "lineRange": [
           13,
@@ -80,7 +80,7 @@
         "severity": "HIGH",
         "locus": "Node: Assign_Owner → OwnerId",
         "message": "Hardcoded ID '00G1g000004ZxYZEA0' in the assignment — breaks on deploy to any other org.",
-        "fix": "Resolve the record with a Get Records node on the appropriate object (e.g., Group WHERE DeveloperName = 'Lead_Default_Queue'), or store it in Custom Metadata.",
+        "fix": "Resolve the record with a Get Records node filtered on a stable field (DeveloperName, Name), or store the ID in Custom Metadata — never paste an org-specific ID into a flow.",
         "lineNumber": 11,
         "lineRange": [
           5,

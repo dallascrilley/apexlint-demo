@@ -1,9 +1,10 @@
 /**
  * Apexlint rule-engine tests — run with `node --test` (no network, no Workers
  * runtime). Covers all 16 rules (positive + clean cases) and asserts the three
- * shipped samples reproduce their expected findings exactly. The same engine
- * runs in the browser (src/components/rules.ts) and on the live Cloudflare
- * backend (functions/apexlint/lint.js); this suite pins them both.
+ * shipped samples reproduce their expected findings exactly. This suite tests
+ * the server engine (functions/apexlint/lint.js); agreement with its browser
+ * twin (src/components/rules.ts) is enforced separately by
+ * tests/engine-parity.test.js.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
+import * as engine from '../functions/apexlint/lint.js';
 import {
   runRulePack,
   lint,
@@ -18,6 +20,7 @@ import {
   runFL001, runFL002, runFL003, runFL004,
   runN8001, runN8002, runN8003, runN8004,
 } from '../functions/apexlint/lint.js';
+import { CORPUS } from './corpus.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const samples = JSON.parse(readFileSync(join(here, '../public/data/samples.json'), 'utf8'));
@@ -65,11 +68,24 @@ test('AP-005 fires on unguarded relationship deref, silent when guarded', () => 
   assert.equal(runAP005(guarded).length, 0);
 });
 
-test('AP-006 fires on an empty catch, silent when there is no catch', () => {
-  // Heuristic note: AP-006 keys off the `} catch (...) {` one-liner shape (as in
-  // the agent-generated samples). The clean case is code with no catch at all.
-  const bad = `try {\n  insert a;\n} catch (DmlException e) {\n  // TODO\n}`;
-  assert.ok(runAP006(bad).some((f) => f.ruleId === 'AP-006'));
+test('AP-006 fires on empty/comment-only catch bodies, silent on real handling', () => {
+  // Comment-only multi-line body → fires.
+  const todoBody = `try {\n  insert a;\n} catch (DmlException e) {\n  // TODO\n}`;
+  assert.ok(runAP006(todoBody).some((f) => f.ruleId === 'AP-006'));
+
+  // Truly-empty one-liner → fires.
+  const emptyOneLiner = `try { insert a; } catch (DmlException e) {}`;
+  assert.ok(runAP006(emptyOneLiner).some((f) => f.ruleId === 'AP-006'));
+
+  // One-liner with a real statement → silent (was a false positive before).
+  const debugOneLiner = `try { insert a; } catch (DmlException e) { System.debug(e); }`;
+  assert.equal(runAP006(debugOneLiner).length, 0);
+
+  // K&R-style catch with a real body → silent (was a false positive before).
+  const rethrow = `try {\n  insert a;\n} catch (DmlException e) {\n  throw new AuraHandledException(e.getMessage());\n}`;
+  assert.equal(runAP006(rethrow).length, 0);
+
+  // No catch at all → silent.
   assert.equal(runAP006(CLEAN_APEX).length, 0);
 });
 
@@ -173,15 +189,25 @@ test('N8-004 fires on a destructive node with no continueOnFail, silent when set
   assert.equal(runN8004(ok).length, 0);
 });
 
-// ─── Coverage guard: all 16 rule fns are exercised above ────────────────────
+// ─── Coverage gate: every rule the engine exports fires on the corpus ───────
 
-test('all 16 rules are covered', () => {
-  const covered = [
-    'AP-001', 'AP-002', 'AP-003', 'AP-004', 'AP-005', 'AP-006', 'AP-007', 'AP-008',
-    'FL-001', 'FL-002', 'FL-003', 'FL-004',
-    'N8-001', 'N8-002', 'N8-003', 'N8-004',
-  ];
-  assert.equal(covered.length, 16);
+test('every exported rule fires at least once across the fixture corpus', () => {
+  // Derive the rule list from the engine itself — exported runXXNNN functions —
+  // instead of a hardcoded array, so a new or renamed rule cannot dodge coverage.
+  const engineRuleIds = Object.keys(engine)
+    .map((name) => name.match(/^run(AP|FL|N8)(\d{3})$/))
+    .filter(Boolean)
+    .map((m) => `${m[1]}-${m[2]}`)
+    .sort();
+  assert.equal(engineRuleIds.length, 16, 'engine should export 16 rule functions');
+
+  const fired = new Set();
+  for (const { tab, source } of CORPUS) {
+    for (const f of runRulePack(tab, source)) fired.add(f.ruleId);
+  }
+  for (const id of engineRuleIds) {
+    assert.ok(fired.has(id), `${id} never fired across the positive fixtures in tests/corpus.mjs`);
+  }
 });
 
 // ─── Sample fixtures reproduce expected findings exactly ────────────────────

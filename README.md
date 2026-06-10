@@ -4,7 +4,7 @@
 
 Apexlint is a **deterministic linter** for the three artifact types AI agents most commonly produce in Salesforce / ops environments: Apex classes & triggers, Salesforce Flow JSON exports, and n8n workflow DSL. It runs **16 deterministic rules** over the exact source you submit — no LLM, no model call, no data leaving to a third party. Sub-50ms per pass.
 
-The same engine runs two ways: **client-side in the browser** (instant, zero-egress) and on a **live Cloudflare Pages Function** (`POST /apexlint/lint`) so the analysis is provably real, not a canned reel. Both code paths share one rule engine and produce byte-identical findings.
+The rule engine runs two ways: **client-side in the browser** (instant, zero-egress) and on a **live Cloudflare Pages Function** (`POST /apexlint/lint`) so the analysis is provably real, not a canned reel. The two code paths are two synchronized implementations of the same 16 rules — TypeScript for the browser, plain JS for the Function — and parity is enforced in CI: `tests/engine-parity.test.js` runs a fixture corpus through both engines and fails if their findings ever differ.
 
 **Live demo:** [demos.dallascrilley.com/apexlint](https://demos.dallascrilley.com/apexlint) — lint the synthetic samples instantly, or paste your own Apex/Flow/n8n and hit **“Lint on server.”**
 
@@ -13,7 +13,7 @@ The same engine runs two ways: **client-side in the browser** (instant, zero-egr
 | Capability | Source |
 | --- | --- |
 | Run 16 deterministic rules over Apex / Flow JSON / n8n you paste | **Real** — actual static analysis of your bytes, client-side and on the live backend |
-| `POST /apexlint/lint` server endpoint returning `{ tab, findings, counts }` | **Real** — a deployed Cloudflare Pages Function running the same engine |
+| `POST /apexlint/lint` server endpoint returning `{ tab, findings, counts }` | **Real** — a deployed Cloudflare Pages Function running the server twin of the browser engine (parity-gated in CI) |
 | Findings cite a rule ID (AP-001 … N8-004), severity, line, and a fix | **Real** — emitted deterministically per rule |
 | Pre-loaded sample artifacts (the “2am agent output” shown on load) | Synthetic — `public/data/samples.json`, regenerated from the engine so they always match live output |
 | Live Salesforce Metadata-API / n8n-REST connection that pulls *from your org* | Out of scope — that needs a server-side OAuth flow; you paste source, the backend lints it |
@@ -49,7 +49,7 @@ It reads `{ tab, source }` (tab ∈ `apex|flow|n8n`), runs the engine, and retur
 
 ```bash
 pnpm install
-pnpm test                                    # node --test — engine + 3 sample fixtures, all 16 rules
+pnpm test                                    # node --test — all 16 rules, 3 sample fixtures, browser/server engine parity
 pnpm build                                   # static site → ./dist
 npx wrangler pages dev dist                  # serve site + POST /apexlint/lint locally (port 8788)
 pnpm dev                                     # static UI only — http://localhost:4321 (samples, no backend)
@@ -66,7 +66,7 @@ The backend (`/apexlint/lint`) is available under `wrangler pages dev`; `pnpm de
 
 ## Architecture
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the rule-engine structure, the client/server shared-engine design, and tradeoffs.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the rule-engine structure, the client/server engine-parity design, and tradeoffs.
 
 ## License
 

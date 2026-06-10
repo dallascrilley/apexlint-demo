@@ -4,17 +4,17 @@
 
 - **Astro 5** — static site generator
 - **TypeScript** — vanilla TS, no framework; the UI is a split-pane code review surface
-- **One Cloudflare Pages Function** (`functions/apexlint/lint.js`, `POST /apexlint/lint`) running the same engine server-side
+- **One Cloudflare Pages Function** (`functions/apexlint/lint.js`, `POST /apexlint/lint`) running a synchronized plain-JS port of the rule engine server-side (parity-gated in CI)
 - **No API keys, no secrets, no environment variables, no external calls**
 
-## Two code paths, one engine
+## Two code paths, one rule set — parity-gated
 
-The 16 rules exist as a pure function `runRulePack(tab, source) → Finding[]`. It is shipped twice from identical logic:
+The 16 rules exist as a pure function `runRulePack(tab, source) → Finding[]`, shipped as two hand-synchronized implementations:
 
 - **Client** (`src/components/rules.ts`, TypeScript) — runs in the browser for instant, zero-egress linting of the samples and anything you paste.
-- **Server** (`functions/apexlint/lint.js`, plain JS) — a Cloudflare Pages Function that runs the *same* logic on a real backend so the analysis is provably not a canned reel.
+- **Server** (`functions/apexlint/lint.js`, plain JS) — a Cloudflare Pages Function that runs the same logic on a real backend so the analysis is provably not a canned reel.
 
-The two are byte-equivalent: `public/data/samples.json` is regenerated from the engine, so the shipped findings, the in-browser findings, and the live `/apexlint/lint` response are identical. `tests/apexlint-lint.test.js` pins all three.
+Nothing structural forces the two files to agree, so CI does: `tests/engine-parity.test.js` compiles the TypeScript engine (using the repo's `typescript` devDependency) and runs a fixture corpus — the three shipped samples plus adversarial snippets (`tests/corpus.mjs`) — through **both** implementations, failing if any finding differs. `public/data/samples.json` is regenerated from the engine, so the shipped findings, the in-browser findings, and the live `/apexlint/lint` response stay identical; `tests/apexlint-lint.test.js` pins them.
 
 ## Why deterministic rules instead of an LLM
 
@@ -94,14 +94,16 @@ The sample is already loaded and linted when the page opens. No empty first impr
 | `src/pages/index.astro` | Shell: nav, hero, linter shell, how-it-works, comparison table, limits |
 | `src/components/app.ts` | Bootstrap, tab switching, lint dispatch, findings rendering, keyboard nav |
 | `src/components/rules.ts` | All 16 rule implementations + dispatcher (client) |
-| `functions/apexlint/lint.js` | Same engine as a Cloudflare Pages Function (`POST /apexlint/lint`) |
-| `tests/apexlint-lint.test.js` | `node --test` suite: all 16 rules (positive + clean) + 3 sample fixtures |
+| `functions/apexlint/lint.js` | Synchronized server port of the engine, as a Cloudflare Pages Function (`POST /apexlint/lint`) |
+| `tests/apexlint-lint.test.js` | `node --test` suite: all 16 rules (positive + clean), engine-derived coverage gate, 3 sample fixtures |
+| `tests/engine-parity.test.js` | Parity gate: browser + server engines must produce identical findings over the corpus |
+| `tests/corpus.mjs` | Shared fixture corpus (positives + adversarial shapes) for the coverage and parity gates |
 | `src/components/types.ts` | Shared interfaces |
 | `src/styles/apexlint.css` | Split-pane layout, severity color system, code highlighting |
 
 ## What was cut for scope
 
-- **Full Apex parser** — regex + brace depth only; misses nested generics and some anonymous block patterns. AP-006, for example, keys off the `} catch (...) {` one-liner shape rather than a full body analysis — a deliberate heuristic, pinned by tests.
+- **Full Apex parser** — regex + brace depth only; misses nested generics and some anonymous block patterns. AP-006, for example, flags catch bodies that are empty or comment-only via line-based brace counting, not full control-flow analysis — a deliberate heuristic, pinned by tests.
 - **Real org connection** — no Salesforce Metadata API, no n8n REST pull. The backend lints source you submit; it does not read from your org (that needs server-side OAuth).
 - **CI wrapper** — no CLI, no GitHub Action for *your* repos (this repo's own CI runs the test + build).
 - **Custom rule authoring UI** — rules are hardcoded.

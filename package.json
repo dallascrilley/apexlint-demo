@@ -8,7 +8,8 @@
       "dev": "astro dev",
       "build": "astro build",
       "preview": "astro preview",
-      "test": "node --test"
+      "build:test-engine": "tsc src/components/rules.ts --outDir tests/.engine-build --target es2022 --module nodenext --moduleResolution nodenext --skipLibCheck",
+      "test": "pnpm build:test-engine && node --test"
    },
    "dependencies": {
       "astro": "^5.0.0"
