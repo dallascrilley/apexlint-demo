@@ -141,6 +141,7 @@ body {
   font-family: var(--al-mono);
   font-size: 11px;
   color: var(--al-ink-soft);
+  text-wrap: pretty; /* no orphaned last word */
 }
 
 /* ── Banner — inspection notice ───────────────────────────── */
@@ -344,6 +345,15 @@ body {
   font-family: var(--al-mono);
   font-size: 11.5px;
   line-height: 1.75;
+  /* visible amber scrollbar — the hint that long lines scroll */
+  scrollbar-color: var(--al-amber) var(--al-panel-deep);
+  scrollbar-width: thin;
+}
+.al-code-lines::-webkit-scrollbar { height: 6px; }
+.al-code-lines::-webkit-scrollbar-track { background: var(--al-panel-deep); }
+.al-code-lines::-webkit-scrollbar-thumb {
+  background: var(--al-amber);
+  border-radius: 3px;
 }
 
 .al-code-row {
@@ -458,8 +468,8 @@ body {
   background: none;
   border: 1.5px solid oklch(0% 0 0 / 0.2);
   border-radius: 5px;
-  padding: 7px 10px;
-  min-height: 34px;
+  padding: 7px 12px;
+  min-height: 44px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
