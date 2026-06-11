@@ -17,7 +17,7 @@
 
 ## 1. Title, vision, and positioning
 
-**Apexlint** is a client-side, rule-based linter for the three artifact types AI agents most commonly produce in Salesforce / ops environments: Apex classes, Flow JSON exports, and n8n workflow DSL. It runs deterministic rule packs entirely in the browser — no backend, no API keys, no secrets — and returns ranked findings, each with severity, the rule that fired, the exact line or node locus, and a concrete fix.
+**Apexlint** is a client-side, rule-based linter for the three artifact types AI agents most commonly produce in Salesforce / ops environments: Apex classes, Flow JSON exports, and n8n workflow DSL. It runs deterministic rule packs in the browser, with the same engine also exposed as a Cloudflare Pages function (`POST /apexlint/lint`) — no LLM, no API keys, no secrets — and returns ranked findings, each with severity, the rule that fired, the exact line or node locus, and a concrete fix.
 
 **The one-line claim it makes:** an AI writing ops-code makes *specific, reproducible mistakes*, and the right guardrail catches them deterministically — in milliseconds, with no model call, no latency tax, and an audit trail you can diff in CI.
 
@@ -55,7 +55,7 @@ The pattern: **AI governance is now an explicit job duty.** Apexlint is the arti
 **What it proves in 30 seconds:**
 
 1. Dallas knows the *specific* failure modes of agent-generated Salesforce/ops code — rule by rule, locus by locus, not in the abstract.
-2. Dallas can design a guardrail that sits between an agent and prod with no backend, no live LLM, no production credentials.
+2. Dallas can design a guardrail that sits between an agent and prod with no live LLM and no production credentials — in-browser by default, with the same deterministic engine on a keyless serverless endpoint.
 3. Dallas's instinct is diagnostic and audit-first — the posture the portfolio anti-pattern analysis recommends ("position every new product as a diagnostic/audit/guardrail layer over the existing stack, not a replacement").
 
 ### Why deterministic rules — not an LLM call — is the senior move
@@ -312,7 +312,7 @@ Dark because the product *reads code and surfaces errors* — a terminal/IDE men
 - **Language:** TypeScript 5.6.
 - **Rule engine:** pure TS — each rule is `(ctx) => Finding[]`; no external linter dependency. Apex rules: comment/string strip pre-pass → brace-depth scan + regex. Flow/n8n rules: `JSON.parse()` → walk the object tree.
 - **Editor:** CodeMirror 6 — `@codemirror/lang-json` for Flow/n8n; minimal Apex keyword highlighter (no LSP); `<textarea>` fallback. Line-highlight + dim driven by a CM decoration set keyed off the selected finding's `lineNumber`/`lineRange`.
-- **No backend, no API keys, no secrets.**
+- **No LLM, no API keys, no secrets.** In-browser by default; the identical rule pack also runs server-side at `POST /apexlint/lint` (Cloudflare Pages function, keyless).
 
 ```
 src/demos/apexlint/
