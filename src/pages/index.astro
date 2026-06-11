@@ -79,7 +79,8 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
             <div class="al-code-body" id="al-code-body">
               <!-- Rendered code lines -->
               <div class="al-code-lines" id="al-code-lines" role="group" aria-label="Source code with highlighted findings"></div>
-              <!-- Paste overlay: hidden textarea for input capture -->
+              <!-- Paste strip: labeled so it reads as an input, not stray code -->
+              <div class="al-paste-label" aria-hidden="true">✎ paste / edit code — lints as you type</div>
               <textarea
                 id="al-code-textarea"
                 class="al-code-textarea"
