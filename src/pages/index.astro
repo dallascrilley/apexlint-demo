@@ -1,7 +1,6 @@
 ---
 // Apexlint — lint the ops-code your agent shipped
-// Astro static page + a live Cloudflare Pages Function (POST /apexlint/lint)
-// running the same deterministic rule engine server-side.
+// Static page; all linting runs client-side from deterministic rule engine.
 import '../styles/apexlint.css';
 const title = "Apexlint — Your agent wrote Apex at 2am. Who reviewed it?";
 const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 deterministic rules. No model call — by design.";
@@ -18,63 +17,34 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#e8a912" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,500..800&family=Martian+Mono:wght@400;500;700&display=swap" />
   </head>
   <body>
     <div class="al-root" id="al-app">
 
-      <!-- Nav -->
+      <!-- App bar -->
       <nav class="al-nav" aria-label="Apexlint navigation">
         <span class="al-nav-wordmark" aria-label="Apexlint">
-          <span class="al-wm-apex">APEX</span><span class="al-wm-sep" aria-hidden="true"></span><span class="al-wm-lint">LINT</span>
+          <span class="al-wm-apex">APEX</span><span class="al-wm-lint">LINT</span>
         </span>
-        <span class="al-nav-sep" aria-hidden="true"></span>
-        <span class="al-nav-tagline">Lint the ops-code your agent shipped.</span>
-        <span class="al-nav-spacer"></span>
         <span class="al-nav-badge">portfolio demo · live backend</span>
       </nav>
+
+      <h1 class="al-hook" id="al-h1">Your agent wrote Apex at 2am. <em>Who reviewed it?</em></h1>
+      <p class="al-hook-sub">16 deterministic rules · Apex / Flow JSON / n8n DSL · sub-50ms in-browser · no model call, by design</p>
 
       <!-- Synthetic data banner -->
       <div class="al-banner" id="al-banner" role="status" aria-live="polite">
         <span class="al-banner-icon" aria-hidden="true">REAL</span>
         <p class="al-banner-text">
           <strong>Real deterministic linting of the code you submit.</strong>
-          Samples lint instantly in your browser; hit <em>“Lint on server”</em> to run the exact same 16-rule engine on the live Cloudflare backend (<code>POST /apexlint/lint</code>). No LLM, no real org, no secrets, no invented benchmarks. <em>The determinism is the point.</em>
+          Samples lint instantly in your browser; <em>“Lint on server”</em> runs the same 16-rule engine on the live Cloudflare backend (<code>POST /apexlint/lint</code>). No LLM, no real org, no secrets. <em>The determinism is the point.</em>
         </p>
         <button class="al-banner-dismiss" id="al-banner-dismiss" aria-label="Dismiss banner">×</button>
       </div>
-
-      <!-- Hero -->
-      <section class="al-hero" aria-labelledby="al-h1">
-        <h1 class="al-hero-h1" id="al-h1">
-          Your agent wrote Apex at 2am.<br>
-          <em>Who reviewed it?</em>
-        </h1>
-        <p class="al-hero-sub">
-          Apexlint catches the specific, reproducible mistakes AI agents make in Salesforce Apex,
-          Flow JSON, and n8n DSL — deterministically, in milliseconds, with no model call and no data leaving your browser.
-        </p>
-        <div class="al-hero-meta" aria-label="Key properties">
-          <span class="al-hero-meta-item">
-            <span class="al-hero-meta-dot" aria-hidden="true"></span>
-            16 deterministic rules
-          </span>
-          <span class="al-hero-meta-item">
-            <span class="al-hero-meta-dot" aria-hidden="true"></span>
-            No model call, by design
-          </span>
-          <span class="al-hero-meta-item">
-            <span class="al-hero-meta-dot" aria-hidden="true"></span>
-            Sub-50ms, in-browser
-          </span>
-          <span class="al-hero-meta-item">
-            <span class="al-hero-meta-dot" aria-hidden="true"></span>
-            Zero data egress
-          </span>
-        </div>
-      </section>
 
       <!-- Linter shell -->
       <div class="al-linter-shell" id="al-linter" aria-label="Apexlint interactive demo">
@@ -90,11 +60,11 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
           <button class="al-tab" data-al-tab="n8n" role="tab" aria-selected="false">
             n8n <span class="al-tab-ext">.json</span>
           </button>
-          <span class="al-tab-bar-spacer"></span>
-          <div class="al-tab-bar-actions">
-            <button class="al-load-sample-btn" id="al-lint-server" aria-label="Lint the current code on the live backend">⚡ Lint on server</button>
-            <button class="al-load-sample-btn" id="al-load-sample" aria-label="Load sample code">↺ Load sample</button>
-          </div>
+        </div>
+
+        <div class="al-actions" role="group" aria-label="Linter actions">
+          <button class="al-load-sample-btn al-btn-primary" id="al-lint-server" aria-label="Lint the current code on the live backend">⚡ Lint on server</button>
+          <button class="al-load-sample-btn" id="al-load-sample" aria-label="Load sample code">↺ Load sample</button>
         </div>
 
         <!-- Split pane: code ↔ findings -->
@@ -104,7 +74,6 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
           <div class="al-code-pane" id="al-code-pane">
             <div class="al-code-header">
               <span class="al-code-filename al-mono" id="al-filename">OpportunityEnrichmentTrigger.cls</span>
-              <span class="al-code-sep" aria-hidden="true">·</span>
               <span class="al-code-desc" id="al-desc">Agent-generated trigger: enrich each Opportunity on update</span>
             </div>
             <div class="al-code-body" id="al-code-body">
@@ -145,105 +114,33 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
         </div><!-- /.al-split -->
       </div><!-- /.al-linter-shell -->
 
-      <!-- How it works -->
+      <!-- How it works — inspection placards -->
       <section class="al-how" aria-labelledby="al-how-h2">
-        <h2 class="al-how-h2" id="al-how-h2">How it works — and why deterministic rules, not an LLM</h2>
+        <h2 class="al-how-h2" id="al-how-h2">Why deterministic rules, not an LLM</h2>
         <div class="al-how-grid">
 
           <div class="al-how-card">
-            <div class="al-how-card-titlebar" aria-hidden="true">
-              <span class="al-how-card-dots">
-                <span class="al-how-card-dot al-how-card-dot--close"></span>
-                <span class="al-how-card-dot al-how-card-dot--min"></span>
-                <span class="al-how-card-dot al-how-card-dot--max"></span>
-              </span>
-              <span class="al-how-card-label">determinism.ts</span>
-            </div>
-            <div class="al-how-card-inner">
-              <div class="al-how-card-gutter" aria-hidden="true">
-                <span class="al-how-card-linenum">1</span>
-                <span class="al-how-card-linenum">2</span>
-                <span class="al-how-card-linenum">3</span>
-                <span class="al-how-card-linenum">4</span>
-                <span class="al-how-card-linenum">5</span>
-              </div>
-              <div class="al-how-card-content">
-                <h3 class="al-how-card-title">Same input, byte-identical output</h3>
-                <p class="al-how-card-body">You don't put a non-deterministic black box on the production gate. Rules produce the same findings every run — CI-gateable, postmortem-citable.</p>
-              </div>
-            </div>
+            <span class="al-how-card-no" aria-hidden="true">01</span>
+            <h3 class="al-how-card-title">Same input, byte-identical output</h3>
+            <p class="al-how-card-body">You don't put a non-deterministic black box on the production gate. Rules produce the same findings every run — CI-gateable, postmortem-citable.</p>
           </div>
 
           <div class="al-how-card">
-            <div class="al-how-card-titlebar" aria-hidden="true">
-              <span class="al-how-card-dots">
-                <span class="al-how-card-dot al-how-card-dot--close"></span>
-                <span class="al-how-card-dot al-how-card-dot--min"></span>
-                <span class="al-how-card-dot al-how-card-dot--max"></span>
-              </span>
-              <span class="al-how-card-label">latency.ts</span>
-            </div>
-            <div class="al-how-card-inner">
-              <div class="al-how-card-gutter" aria-hidden="true">
-                <span class="al-how-card-linenum">1</span>
-                <span class="al-how-card-linenum">2</span>
-                <span class="al-how-card-linenum">3</span>
-                <span class="al-how-card-linenum">4</span>
-                <span class="al-how-card-linenum">5</span>
-              </div>
-              <div class="al-how-card-content">
-                <h3 class="al-how-card-title">Sub-50ms, zero network</h3>
-                <p class="al-how-card-body">No model call, no spinner. The rule engine runs in your tab. Source code never leaves the browser. Nothing to leak.</p>
-              </div>
-            </div>
+            <span class="al-how-card-no" aria-hidden="true">02</span>
+            <h3 class="al-how-card-title">Sub-50ms, zero network</h3>
+            <p class="al-how-card-body">No model call, no spinner. The rule engine runs in your tab. Source code never leaves the browser. Nothing to leak.</p>
           </div>
 
           <div class="al-how-card">
-            <div class="al-how-card-titlebar" aria-hidden="true">
-              <span class="al-how-card-dots">
-                <span class="al-how-card-dot al-how-card-dot--close"></span>
-                <span class="al-how-card-dot al-how-card-dot--min"></span>
-                <span class="al-how-card-dot al-how-card-dot--max"></span>
-              </span>
-              <span class="al-how-card-label">auditability.ts</span>
-            </div>
-            <div class="al-how-card-inner">
-              <div class="al-how-card-gutter" aria-hidden="true">
-                <span class="al-how-card-linenum">1</span>
-                <span class="al-how-card-linenum">2</span>
-                <span class="al-how-card-linenum">3</span>
-                <span class="al-how-card-linenum">4</span>
-                <span class="al-how-card-linenum">5</span>
-              </div>
-              <div class="al-how-card-content">
-                <h3 class="al-how-card-title">Every finding cites a rule ID</h3>
-                <p class="al-how-card-body">AP-001 — not "the model said so." Each rule has a fixture pair (passing + failing) in the public repo. The claim is checkable.</p>
-              </div>
-            </div>
+            <span class="al-how-card-no" aria-hidden="true">03</span>
+            <h3 class="al-how-card-title">Every finding cites a rule ID</h3>
+            <p class="al-how-card-body">AP-001 — not "the model said so." Each rule has a fixture pair (passing + failing) in the public repo. The claim is checkable.</p>
           </div>
 
           <div class="al-how-card">
-            <div class="al-how-card-titlebar" aria-hidden="true">
-              <span class="al-how-card-dots">
-                <span class="al-how-card-dot al-how-card-dot--close"></span>
-                <span class="al-how-card-dot al-how-card-dot--min"></span>
-                <span class="al-how-card-dot al-how-card-dot--max"></span>
-              </span>
-              <span class="al-how-card-label">architecture.ts</span>
-            </div>
-            <div class="al-how-card-inner">
-              <div class="al-how-card-gutter" aria-hidden="true">
-                <span class="al-how-card-linenum">1</span>
-                <span class="al-how-card-linenum">2</span>
-                <span class="al-how-card-linenum">3</span>
-                <span class="al-how-card-linenum">4</span>
-                <span class="al-how-card-linenum">5</span>
-              </div>
-              <div class="al-how-card-content">
-                <h3 class="al-how-card-title">LLM for the fuzzy; rules for the gate</h3>
-                <p class="al-how-card-body">Reserve the LLM for explaining a finding, not deciding it. Knowing when not to use an AI is the architectural signal.</p>
-              </div>
-            </div>
+            <span class="al-how-card-no" aria-hidden="true">04</span>
+            <h3 class="al-how-card-title">LLM for the fuzzy; rules for the gate</h3>
+            <p class="al-how-card-body">Reserve the LLM for explaining a finding, not deciding it. Knowing when not to use an AI is the architectural signal.</p>
           </div>
 
         </div>
