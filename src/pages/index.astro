@@ -2,6 +2,8 @@
 // Apexlint — lint the ops-code your agent shipped
 // Static page; all linting runs client-side from deterministic rule engine.
 import '../styles/apexlint.css';
+import GuidedTour from '../components/demo/GuidedTour.astro';
+import { GUIDED_TOURS } from '../data/guidedTours';
 const title = "Apexlint — Your agent wrote Apex at 2am. Who reviewed it?";
 const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 deterministic rules. No model call — by design.";
 ---
@@ -45,6 +47,8 @@ const description = "Client-side linter for Apex, Flow JSON, and n8n DSL. 16 det
         </p>
         <button class="al-banner-dismiss" id="al-banner-dismiss" aria-label="Dismiss banner">×</button>
       </div>
+
+      <GuidedTour {...GUIDED_TOURS.apexlint} />
 
       <!-- Linter shell -->
       <div class="al-linter-shell" id="al-linter" aria-label="Apexlint interactive demo">
