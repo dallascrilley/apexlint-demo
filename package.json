@@ -4,6 +4,9 @@
    "version": "1.0.0",
    "private": false,
    "description": "Apexlint — deterministic linter for Apex, Flow JSON, and n8n DSL, with a live Cloudflare Pages Function backend. Public portfolio demo.",
+   "exports": {
+      "./engine": "./src/components/engine.ts"
+   },
    "scripts": {
       "dev": "astro dev",
       "build": "astro build",
